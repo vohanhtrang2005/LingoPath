@@ -1,0 +1,13 @@
+C:\hanhtrang\GAKUDO\content-service\src\main\java\com\gakudo\content\ContentServiceApplication.java
+C:\hanhtrang\GAKUDO\content-service\src\main\java\com\gakudo\content\controller\KnowledgeItemController.java
+C:\hanhtrang\GAKUDO\content-service\src\main\java\com\gakudo\content\dto\request\KnowledgeItemRequest.java
+C:\hanhtrang\GAKUDO\content-service\src\main\java\com\gakudo\content\dto\request\SourceReferenceRequest.java
+C:\hanhtrang\GAKUDO\content-service\src\main\java\com\gakudo\content\dto\response\KnowledgeItemResponse.java
+C:\hanhtrang\GAKUDO\content-service\src\main\java\com\gakudo\content\dto\response\SourceReferenceResponse.java
+C:\hanhtrang\GAKUDO\content-service\src\main\java\com\gakudo\content\model\Book.java
+C:\hanhtrang\GAKUDO\content-service\src\main\java\com\gakudo\content\model\KnowledgeItem.java
+C:\hanhtrang\GAKUDO\content-service\src\main\java\com\gakudo\content\model\SourceReference.java
+C:\hanhtrang\GAKUDO\content-service\src\main\java\com\gakudo\content\repository\BookRepository.java
+C:\hanhtrang\GAKUDO\content-service\src\main\java\com\gakudo\content\repository\KnowledgeItemRepository.java
+C:\hanhtrang\GAKUDO\content-service\src\main\java\com\gakudo\content\repository\SourceReferenceRepository.java
+C:\hanhtrang\GAKUDO\content-service\src\main\java\com\gakudo\content\service\KnowledgeItemService.java

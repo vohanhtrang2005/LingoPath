@@ -1,0 +1,164 @@
+version: '3.8'
+
+services:
+  # ==========================================
+  # 1. API GATEWAY (Không cần DB)
+  # ==========================================
+  api-gateway:
+    build:
+      context: ./api-gateway
+      dockerfile: Dockerfile
+    container_name: gakudo-api-gateway
+    ports:
+      - "8080:8080"
+    networks:
+      - gakudo-network
+
+  # ==========================================
+  # 2. AUTH SERVICE & DATABASE
+  # ==========================================
+  auth-db:
+    image: postgres:16-alpine
+    container_name: gakudo-auth-db
+    environment:
+      POSTGRES_USER: root
+      POSTGRES_PASSWORD: 123
+      POSTGRES_DB: auth_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - auth-db-data:/var/lib/postgresql/data
+    networks:
+      - gakudo-network
+
+  auth-service:
+    build:
+      context: ./auth-service
+      dockerfile: Dockerfile
+    container_name: gakudo-auth-service
+    expose:
+      - "8081"
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://auth-db:5432/auth_db
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=123
+    depends_on:
+      - auth-db
+    networks:
+      - gakudo-network
+
+  # ==========================================
+  # 3. LEARNING SERVICE & DATABASE
+  # ==========================================
+  learning-db:
+    image: postgres:16-alpine
+    container_name: gakudo-learning-db
+    environment:
+      POSTGRES_USER: root
+      POSTGRES_PASSWORD: 123
+      POSTGRES_DB: learning_db
+    ports:
+      - "5433:5432" # Map port máy tính (5433) -> port PostgreSQL trong docker (5432) để không bị trùng
+    volumes:
+      - learning-db-data:/var/lib/postgresql/data
+    networks:
+      - gakudo-network
+
+  learning-service:
+    build:
+      context: ./learning-service
+      dockerfile: Dockerfile
+    container_name: gakudo-learning-service
+    expose:
+      - "8082"
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://learning-db:5432/learning_db
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=123
+    depends_on:
+      - learning-db
+    networks:
+      - gakudo-network
+
+  # ==========================================
+  # 4. CONTENT SERVICE & DATABASE
+  # ==========================================
+  content-db:
+    image: postgres:16-alpine
+    container_name: gakudo-content-db
+    environment:
+      POSTGRES_USER: root
+      POSTGRES_PASSWORD: 123
+      POSTGRES_DB: content_db
+    ports:
+      - "5434:5432"
+    volumes:
+      - content-db-data:/var/lib/postgresql/data
+    networks:
+      - gakudo-network
+
+  content-service:
+    build:
+      context: ./content-service
+      dockerfile: Dockerfile
+    container_name: gakudo-content-service
+    expose:
+      - "8083"
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://content-db:5432/content_db
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=123
+    depends_on:
+      - content-db
+    networks:
+      - gakudo-network
+
+  # ==========================================
+  # 5. AI SERVICE & DATABASE
+  # ==========================================
+  ai-db:
+    image: pgvector/pgvector:pg16  # Database này dùng ảnh pgvector hỗ trợ AI search
+    container_name: gakudo-ai-db
+    environment:
+      POSTGRES_USER: root
+      POSTGRES_PASSWORD: 123
+      POSTGRES_DB: ai_db
+    ports:
+      - "5435:5432"
+    volumes:
+      - ai-db-data:/var/lib/postgresql/data
+    networks:
+      - gakudo-network
+
+  ai-service:
+    build:
+      context: ./ai-service
+      dockerfile: Dockerfile
+    container_name: gakudo-ai-service
+    expose:
+      - "8084"
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://ai-db:5432/ai_db
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=123
+    depends_on:
+      - ai-db
+    networks:
+      - gakudo-network
+
+
+# ==========================================
+# KHAI BÁO Ổ CỨNG LƯU TRỮ (VOLUMES)
+# ==========================================
+volumes:
+  auth-db-data:
+  learning-db-data:
+  content-db-data:
+  ai-db-data:
+
+# ==========================================
+# KHAI BÁO MẠNG ẢO
+# ==========================================
+networks:
+  gakudo-network:
+    driver: bridge

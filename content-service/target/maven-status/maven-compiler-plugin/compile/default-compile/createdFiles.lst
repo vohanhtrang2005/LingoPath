@@ -1,0 +1,8 @@
+com\gakudo\content\service\KnowledgeItemService.class
+com\gakudo\content\model\Book.class
+com\gakudo\content\model\KnowledgeItem.class
+com\gakudo\content\repository\KnowledgeItemRepository.class
+com\gakudo\content\dto\request\KnowledgeItemRequest.class
+com\gakudo\content\controller\KnowledgeItemController.class
+com\gakudo\content\ContentServiceApplication.class
+com\gakudo\content\dto\response\KnowledgeItemResponse.class

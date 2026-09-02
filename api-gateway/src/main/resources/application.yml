@@ -1,0 +1,56 @@
+﻿server:
+  port: 8080
+
+spring:
+  application:
+    name: api-gateway
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          jwk-set-uri: ${AUTH_JWKS_URI:http://auth-service:8081/api/auth/.well-known/jwks.json}
+  cloud:
+    gateway:
+      mvc:
+        routes:
+          # ==========================================
+          # 1. AUTH SERVICE: /api/auth/**
+          # ==========================================
+          - id: auth-service
+            uri: http://auth-service:8081
+            predicates:
+              - Path=/api/auth/**
+
+          - id: learning-service-reviews
+            uri: http://learning-service:8082
+            predicates:
+              - Path=/api/reviews/**
+
+          # ==========================================
+          # 2. LEARNING SERVICE: /api/learning/**
+          # ==========================================
+          - id: learning-service
+            uri: http://learning-service:8082
+            predicates:
+              - Path=/api/learning/**
+
+          # ==========================================
+          # 3. CONTENT SERVICE: /api/content/**
+          # ==========================================
+          - id: content-service
+            uri: http://content-service:8083
+            predicates:
+              - Path=/api/content/**
+
+          # ==========================================
+          # 4. AI SERVICE: /api/ai/**
+          # ==========================================
+          # - id: ai-service
+          #   uri: http://ai-service:8084
+          #   predicates:
+          #     - Path=/api/ai/**
+
+logging:
+  level:
+    org.springframework.cloud.gateway: DEBUG  # Báº­t log Ä‘á»ƒ dá»… debug luá»“ng routing
+
