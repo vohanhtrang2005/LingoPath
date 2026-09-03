@@ -350,7 +350,60 @@ A `SourceReference` links a `KnowledgeItem` to source evidence:
 - chunk id;
 - evidence text.
 
-## 6.6 StudyPlan
+## 6.6 SourceExercise
+
+A `SourceExercise` is an original exercise block found in an uploaded book or document.
+
+It preserves the source exercise as it appears in the material, including:
+
+- book;
+- page range;
+- section title;
+- instruction;
+- shared context;
+- word bank;
+- passage;
+- audio reference;
+- raw questions;
+- answer key when available;
+- source evidence.
+
+Examples:
+
+- a 5-question fill-in-the-blank vocabulary exercise;
+- a 100-question mixed vocabulary exercise;
+- a grammar reorder exercise;
+- a reading passage with multiple questions;
+- a listening dialogue with answer choices.
+
+`SourceExercise` exists so the system does not lose the original exercise boundary and source traceability.
+
+## 6.7 PracticeItem
+
+A `PracticeItem` is a student-facing practice unit used in a web lesson.
+
+It may come from:
+
+- a source exercise extracted from a book;
+- a smaller subset of a large source exercise;
+- admin-created practice;
+- AI-generated practice when the source does not contain enough suitable exercises.
+
+Practice items can be simple or grouped.
+
+Examples:
+
+- one multiple-choice question;
+- one fill-in-the-blank group with a shared word bank;
+- ten selected questions from a 100-question source exercise;
+- one reading passage with its questions;
+- one listening task with its questions.
+
+If a source exercise has shared context, shared instruction, shared word bank, shared passage or shared audio, the system should preserve that context inside the same `PracticeItem` or link the `PracticeItem` back to its `SourceExercise`.
+
+Scheduling uses `PracticeItem` as the assignment unit. Scoring may happen per sub-question inside the practice item.
+
+## 6.8 StudyPlan
 
 A `StudyPlan` is the student's generated route for a selected target.
 
@@ -365,7 +418,7 @@ Current note: N4 grammar not firm
 
 The planner must create a feasible plan from published content.
 
-## 6.7 DailyLesson
+## 6.9 DailyLesson
 
 A `DailyLesson` is one day of learning inside a study plan.
 
@@ -531,7 +584,40 @@ Acceptance criteria:
 - mixed chunks are split or classified as `MIXED`;
 - AI-created items keep their source references.
 
-### FR-AI-003 Content enrichment
+### FR-AI-003 Source exercise extraction
+
+The system shall extract source-backed exercises from uploaded documents when exercises exist in the source material.
+
+Acceptance criteria:
+
+- the system detects exercise boundaries;
+- shared instructions are preserved;
+- shared word banks are preserved;
+- shared passages are preserved;
+- shared audio references are preserved when available;
+- answer keys are extracted when available;
+- each extracted exercise points back to source evidence.
+
+### FR-AI-004 Large and mixed exercise analysis
+
+The system shall support large or mixed exercises from source material.
+
+Example:
+
+```text
+One book exercise contains 100 mixed questions for many vocabulary or grammar items.
+```
+
+Acceptance criteria:
+
+- the original exercise is stored as `SourceExercise`;
+- sub-questions can be analyzed individually;
+- each sub-question can be mapped to related `KnowledgeItem` records when possible;
+- difficulty and skill tags can be assigned per sub-question;
+- the system may create smaller `PracticeItem` records from a large `SourceExercise`;
+- smaller practice items must keep a reference to the original `SourceExercise` and source evidence.
+
+### FR-AI-005 Content enrichment
 
 AI may enrich content with explanations, readings, meanings, examples and notes.
 
@@ -541,7 +627,7 @@ Acceptance criteria:
 - generated explanations are marked as AI-generated;
 - source-backed claims include source references.
 
-### FR-AI-004 Frequency and evidence analysis
+### FR-AI-006 Frequency and evidence analysis
 
 The system should calculate or estimate whether a knowledge item appears frequently across uploaded sources.
 
@@ -793,7 +879,38 @@ The system shall support reading passages and answer submission.
 
 ### FR-LEARN-006 Practice items
 
-Vocabulary and grammar lessons should include practice questions when source-backed or approved `PracticeItem` records exist.
+Vocabulary, grammar, kanji, reading and listening sections should include practice when source-backed or approved `PracticeItem` records exist.
+
+Practice items may come from:
+
+- exercises extracted from the source book;
+- smaller subsets of large source exercises;
+- admin-created exercises;
+- AI-generated exercises when the source has no exercise or not enough suitable exercise.
+
+Acceptance criteria:
+
+- source exercises from books are preferred when available;
+- AI-generated exercises must be labeled and approved before publication;
+- practice can be more complex than simple meaning questions;
+- grouped exercises with shared context are preserved as grouped `PracticeItem` records;
+- a grouped `PracticeItem` may contain multiple sub-questions;
+- scoring can happen per sub-question;
+- mistakes can be mapped back to related `KnowledgeItem` records.
+
+### FR-LEARN-006A Practice integrity and workload
+
+The system shall preserve exercise integrity while keeping daily workload reasonable.
+
+Acceptance criteria:
+
+- exercises with shared word banks, shared instructions, shared passages or shared audio must not be split in a way that removes required context;
+- small grouped exercises can be assigned as one `PracticeItem`;
+- large source exercises can be split into smaller `PracticeItem` subsets;
+- each subset keeps a link to the original `SourceExercise`;
+- the planner must not assign a 100-question source exercise into one daily lesson if that overloads the student;
+- the planner may select only the sub-questions related to today's `KnowledgeItem` records;
+- no sub-question should be scheduled without the context needed to answer it.
 
 
 ### FR-LEARN-007 Passive learning signals
@@ -996,6 +1113,8 @@ Deliverables:
 - chunk classification;
 - AI-created `KnowledgeItem` extraction;
 - AI-created `PracticeItem` extraction;
+- source exercise extraction;
+- large exercise splitting while preserving traceability;
 - source references;
 - admin review and publish.
 
@@ -1094,6 +1213,11 @@ Deliverables:
 19. The system must not require manual `AGAIN`, `HARD`, `GOOD` or `EASY` rating for every learned item.
 20. Review scheduling should be driven mainly by passive learning signals and performance signals.
 21. Batch feedback for an entire lesson is not a reliable mastery signal and is not part of the required flow.
+22. Source-backed exercises should be preserved as `SourceExercise` records before being converted into student-facing practice.
+23. `PracticeItem` is the student-facing practice assignment unit and may contain one or many sub-questions.
+24. Exercises with shared context, word bank, passage or audio must not be split in a way that makes the question impossible or confusing.
+25. Large source exercises may be split into smaller `PracticeItem` subsets for daily lessons, but every subset must keep traceability to the original `SourceExercise`.
+26. The planner must balance practice workload and should not force a large mixed exercise into one daily lesson just because it appears as one exercise in the book.
 
 
 
