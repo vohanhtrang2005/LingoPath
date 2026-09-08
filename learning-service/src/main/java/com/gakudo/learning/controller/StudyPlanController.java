@@ -25,6 +25,7 @@ public class StudyPlanController {
         this.studyPlanService = studyPlanService;
     }
 
+    // Muc dich: Tao lo trinh hoc tu muc tieu user va noi dung PUBLISHED hien co.
     @PostMapping("/plans")
     public ResponseEntity<StudyPlanResponse> createPlan(
             @RequestHeader("X-User-Id") UUID userId,
@@ -32,17 +33,29 @@ public class StudyPlanController {
         return ResponseEntity.ok(studyPlanService.createPlan(userId, request));
     }
 
+    // Muc dich: Lay study plan ACTIVE hien tai cua user dang dang nhap.
     @GetMapping("/plans/current")
     public ResponseEntity<StudyPlanResponse> getCurrentPlan(@RequestHeader("X-User-Id") UUID userId) {
         return ResponseEntity.ok(studyPlanService.getCurrentPlan(userId));
     }
 
+    // Muc dich: Lay chi tiet mot DailyLesson va kiem tra lesson thuoc dung user.
     @GetMapping("/lessons/{lessonId}")
     public ResponseEntity<DailyLessonResponse> getLesson(
             @RequestHeader("X-User-Id") UUID userId,
             @PathVariable UUID lessonId) {
         return ResponseEntity.ok(studyPlanService.getLesson(userId, lessonId));
     }
+
+    // Muc dich: Lay DailyLesson kem noi dung that cua KnowledgeItem/PracticeItem de FE hien thi man hoc.
+    @GetMapping("/lessons/{lessonId}/content")
+    public ResponseEntity<DailyLessonResponse> getLessonContent(
+            @RequestHeader("X-User-Id") UUID userId,
+            @PathVariable UUID lessonId) {
+        return ResponseEntity.ok(studyPlanService.getLessonContent(userId, lessonId));
+    }
+
+    // Muc dich: Lay danh sach DailyLesson trong mot StudyPlan cua user.
     @GetMapping("/plans/{planId}/lessons")
     public ResponseEntity<List<DailyLessonResponse>> getLessons(
             @RequestHeader("X-User-Id") UUID userId,

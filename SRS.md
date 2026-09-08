@@ -634,7 +634,10 @@ The system should calculate or estimate whether a knowledge item appears frequen
 Acceptance criteria:
 
 - repeated appearances can be grouped;
-- frequency can influence notes or priority;
+- `appearanceCount` stores the number of detected appearances when available;
+- `frequencyLevel` stores a readable label such as `LOW`, `MEDIUM` or `HIGH`;
+- frequency can influence notes, priority or review emphasis;
+- frequency must not be confused with difficulty;
 - frequency does not replace admin approval.
 
 ### FR-RAG-001 Retrieval
@@ -681,6 +684,8 @@ Required fields:
 - content JSON;
 - order index;
 - difficulty;
+- appearance count;
+- frequency level;
 - source references.
 
 ### FR-KNOW-002 Knowledge types

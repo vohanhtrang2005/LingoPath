@@ -8,6 +8,8 @@ import { CurrentPlanPage } from "../features/study-plan/CurrentPlanPage";
 import { LessonListPage } from "../features/lesson/LessonListPage";
 import { LessonDetailPage } from "../features/lesson/LessonDetailPage";
 import { KnowledgeItemListPage } from "../features/content/KnowledgeItemListPage";
+import { AdminBooksPage } from "../features/admin/pages/AdminBooksPage";
+import { AdminBookDocumentsPage } from "../features/admin/pages/AdminBookDocumentsPage";
 
 export const router = createBrowserRouter([
   {
@@ -21,7 +23,9 @@ export const router = createBrowserRouter([
       { path: "plans/current", element: <CurrentPlanPage /> },
       { path: "lessons", element: <LessonListPage /> },
       { path: "lessons/:lessonId", element: <LessonDetailPage /> },
-      { path: "knowledge", element: <KnowledgeItemListPage /> }
+      { path: "knowledge", element: <KnowledgeItemListPage /> },
+      { path: "admin/books", element: <AdminBooksPage /> },
+      { path: "admin/books/:bookId/documents", element: <AdminBookDocumentsPage /> }
     ]
   }
 ]);

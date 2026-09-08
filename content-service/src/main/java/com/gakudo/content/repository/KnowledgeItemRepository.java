@@ -1,4 +1,4 @@
-﻿package com.gakudo.content.repository;
+package com.gakudo.content.repository;
 
 import com.gakudo.content.model.KnowledgeItem;
 import org.springframework.data.jpa.repository.JpaRepository;

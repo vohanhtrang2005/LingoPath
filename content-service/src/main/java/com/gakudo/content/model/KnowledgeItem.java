@@ -1,4 +1,4 @@
-﻿package com.gakudo.content.model;
+package com.gakudo.content.model;
 
 import jakarta.persistence.*;
 import org.hibernate.annotations.JdbcTypeCode;
@@ -42,6 +42,10 @@ public class KnowledgeItem {
 
     private String difficulty;
 
+    private Integer appearanceCount;
+
+    private String frequencyLevel;
+
     @OneToMany(mappedBy = "knowledgeItem", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<SourceReference> sourceReferences = new ArrayList<>();
 
@@ -68,6 +72,10 @@ public class KnowledgeItem {
     public void setOrderIndex(Integer orderIndex) { this.orderIndex = orderIndex; }
     public String getDifficulty() { return difficulty; }
     public void setDifficulty(String difficulty) { this.difficulty = difficulty; }
+    public Integer getAppearanceCount() { return appearanceCount; }
+    public void setAppearanceCount(Integer appearanceCount) { this.appearanceCount = appearanceCount; }
+    public String getFrequencyLevel() { return frequencyLevel; }
+    public void setFrequencyLevel(String frequencyLevel) { this.frequencyLevel = frequencyLevel; }
     public List<SourceReference> getSourceReferences() { return sourceReferences; }
     public void setSourceReferences(List<SourceReference> sourceReferences) { this.sourceReferences = sourceReferences; }
 }

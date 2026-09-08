@@ -1,7 +1,9 @@
 package com.gakudo.learning.service;
 
 import com.gakudo.learning.client.ContentKnowledgeClient;
+import com.gakudo.learning.client.ContentPracticeClient;
 import com.gakudo.learning.dto.request.CreateStudyPlanRequest;
+import com.gakudo.learning.dto.response.ContentPracticeItemResponse;
 import com.gakudo.learning.dto.response.DailyLearningItemResponse;
 import com.gakudo.learning.dto.response.DailyLessonResponse;
 import com.gakudo.learning.dto.response.ContentKnowledgeItemResponse;
@@ -26,9 +28,11 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -40,22 +44,27 @@ public class StudyPlanService {
     private static final String LEARNING_DAY = "LEARNING_DAY";
     private static final String REVIEW_DAY = "REVIEW_DAY";
     private static final String KNOWLEDGE = "KNOWLEDGE";
+    private static final String PRACTICE = "PRACTICE";
     private static final String NEW_LEARNING = "NEW_LEARNING";
+    private static final String CORE_PRACTICE = "CORE_PRACTICE";
 
     private final LearningProfileRepository learningProfileRepository;
     private final StudyPlanRepository studyPlanRepository;
     private final DailyLessonRepository dailyLessonRepository;
     private final ContentKnowledgeClient contentKnowledgeClient;
+    private final ContentPracticeClient contentPracticeClient;
 
     public StudyPlanService(
             LearningProfileRepository learningProfileRepository,
             StudyPlanRepository studyPlanRepository,
             DailyLessonRepository dailyLessonRepository,
-            ContentKnowledgeClient contentKnowledgeClient) {
+            ContentKnowledgeClient contentKnowledgeClient,
+            ContentPracticeClient contentPracticeClient) {
         this.learningProfileRepository = learningProfileRepository;
         this.studyPlanRepository = studyPlanRepository;
         this.dailyLessonRepository = dailyLessonRepository;
         this.contentKnowledgeClient = contentKnowledgeClient;
+        this.contentPracticeClient = contentPracticeClient;
     }
 
     @Transactional
@@ -100,7 +109,12 @@ public class StudyPlanService {
                 savedPlan.getTargetLevelSystem(),
                 savedPlan.getTargetLevelCode()
         );
-        dailyLessonRepository.saveAll(buildDailyLessons(savedPlan, curriculum));
+        List<ContentPracticeItemResponse> practiceItems = contentPracticeClient.getPublishedPractice(
+                savedPlan.getTargetLanguage(),
+                savedPlan.getTargetLevelSystem(),
+                savedPlan.getTargetLevelCode()
+        );
+        dailyLessonRepository.saveAll(buildDailyLessons(savedPlan, curriculum, practiceItems));
 
         return mapPlan(savedPlan);
     }
@@ -112,12 +126,22 @@ public class StudyPlanService {
     }
 
     public DailyLessonResponse getLesson(UUID userId, UUID lessonId) {
+        DailyLesson lesson = findOwnedLesson(userId, lessonId);
+        return mapLesson(lesson, false);
+    }
+
+    public DailyLessonResponse getLessonContent(UUID userId, UUID lessonId) {
+        DailyLesson lesson = findOwnedLesson(userId, lessonId);
+        return mapLesson(lesson, true);
+    }
+
+    private DailyLesson findOwnedLesson(UUID userId, UUID lessonId) {
         DailyLesson lesson = dailyLessonRepository.findById(lessonId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Daily lesson not found"));
         if (!lesson.getStudyPlan().getUserId().equals(userId)) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Khong co quyen truy cap");
         }
-        return mapLesson(lesson);
+        return lesson;
     }
 
     public List<DailyLessonResponse> getLessons(UUID userId, UUID planId) {
@@ -128,7 +152,7 @@ public class StudyPlanService {
         }
         return dailyLessonRepository.findByStudyPlanIdOrderByDayIndexAsc(planId)
                 .stream()
-                .map(this::mapLesson)
+                .map(lesson -> mapLesson(lesson, false))
                 .toList();
     }
 
@@ -147,12 +171,18 @@ public class StudyPlanService {
         }
     }
 
-    private List<DailyLesson> buildDailyLessons(StudyPlan plan, List<ContentKnowledgeItemResponse> curriculum) {
+    private List<DailyLesson> buildDailyLessons(
+            StudyPlan plan,
+            List<ContentKnowledgeItemResponse> curriculum,
+            List<ContentPracticeItemResponse> practiceItems) {
         long totalDays = ChronoUnit.DAYS.between(plan.getStartDate(), plan.getEndDate()) + 1;
         List<DailyLesson> lessons = new ArrayList<>();
         long learningDays = Math.max(1, totalDays - (totalDays / 7));
         Map<String, Queue<ContentKnowledgeItemResponse>> itemsByType = groupItemsByType(curriculum);
         Map<String, Integer> quotaByType = calculateQuotaByType(curriculum, learningDays);
+        Map<String, List<ContentPracticeItemResponse>> practiceBySkill = groupPracticeBySkill(practiceItems);
+        Map<String, Integer> practiceQuotaBySkill = calculatePracticeQuotaBySkill(practiceItems, learningDays);
+        Set<UUID> assignedPracticeIds = new HashSet<>();
         for (int i = 0; i < totalDays; i++) {
             DailyLesson lesson = new DailyLesson();
             lesson.setStudyPlan(plan);
@@ -165,6 +195,7 @@ public class StudyPlanService {
             lesson.setSections(buildDefaultSections(lesson, plan.getTargetLanguage(), lessonType));
             if (LEARNING_DAY.equals(lessonType)) {
                 assignKnowledgeItems(lesson, itemsByType, quotaByType);
+                assignPracticeItems(lesson, practiceBySkill, practiceQuotaBySkill, assignedPracticeIds);
             }
             lessons.add(lesson);
         }
@@ -207,6 +238,33 @@ public class StudyPlanService {
         return quotaByType;
     }
 
+    private Map<String, List<ContentPracticeItemResponse>> groupPracticeBySkill(List<ContentPracticeItemResponse> practiceItems) {
+        if (practiceItems == null) {
+            return new HashMap<>();
+        }
+        return practiceItems.stream()
+                .filter(item -> item.getSkill() != null)
+                .sorted(Comparator.comparing(
+                        ContentPracticeItemResponse::getOrderIndex,
+                        Comparator.nullsLast(Integer::compareTo)
+                ))
+                .collect(Collectors.groupingBy(ContentPracticeItemResponse::getSkill));
+    }
+
+    private Map<String, Integer> calculatePracticeQuotaBySkill(List<ContentPracticeItemResponse> practiceItems, long learningDays) {
+        Map<String, Long> countsBySkill = practiceItems == null
+                ? Map.of()
+                : practiceItems.stream()
+                        .filter(item -> item.getSkill() != null)
+                        .collect(Collectors.groupingBy(ContentPracticeItemResponse::getSkill, Collectors.counting()));
+
+        Map<String, Integer> quotaBySkill = new HashMap<>();
+        for (Map.Entry<String, Long> entry : countsBySkill.entrySet()) {
+            quotaBySkill.put(entry.getKey(), (int) Math.ceil((double) entry.getValue() / learningDays));
+        }
+        return quotaBySkill;
+    }
+
     private void assignKnowledgeItems(
             DailyLesson lesson,
             Map<String, Queue<ContentKnowledgeItemResponse>> itemsByType,
@@ -231,6 +289,74 @@ public class StudyPlanService {
                 order++;
             }
         }
+    }
+
+    private void assignPracticeItems(
+            DailyLesson lesson,
+            Map<String, List<ContentPracticeItemResponse>> practiceBySkill,
+            Map<String, Integer> practiceQuotaBySkill,
+            Set<UUID> assignedPracticeIds) {
+        for (DailySection section : lesson.getSections()) {
+            List<ContentPracticeItemResponse> practices = practiceBySkill.get(section.getType());
+            int quota = practiceQuotaBySkill.getOrDefault(section.getType(), 0);
+            if (practices == null || quota <= 0) {
+                continue;
+            }
+
+            Set<UUID> sectionKnowledgeIds = section.getItems().stream()
+                    .filter(item -> KNOWLEDGE.equals(item.getItemType()))
+                    .map(DailyLearningItem::getItemId)
+                    .collect(Collectors.toSet());
+
+            int assigned = 0;
+            int order = section.getItems().size() + 1;
+            while (assigned < quota) {
+                ContentPracticeItemResponse practice = findNextPractice(practices, assignedPracticeIds, sectionKnowledgeIds);
+                if (practice == null) {
+                    break;
+                }
+
+                DailyLearningItem item = new DailyLearningItem();
+                item.setDailySection(section);
+                item.setItemType(PRACTICE);
+                item.setItemId(practice.getId());
+                item.setAssignmentType(CORE_PRACTICE);
+                item.setOrderIndex(order);
+                item.setStatus(NOT_STARTED);
+                section.getItems().add(item);
+
+                assignedPracticeIds.add(practice.getId());
+                assigned++;
+                order++;
+            }
+        }
+    }
+
+    private ContentPracticeItemResponse findNextPractice(
+            List<ContentPracticeItemResponse> practices,
+            Set<UUID> assignedPracticeIds,
+            Set<UUID> sectionKnowledgeIds) {
+        for (ContentPracticeItemResponse practice : practices) {
+            if (!assignedPracticeIds.contains(practice.getId())
+                    && hasRelatedKnowledge(practice, sectionKnowledgeIds)) {
+                return practice;
+            }
+        }
+        for (ContentPracticeItemResponse practice : practices) {
+            if (!assignedPracticeIds.contains(practice.getId())) {
+                return practice;
+            }
+        }
+        return null;
+    }
+
+    private boolean hasRelatedKnowledge(ContentPracticeItemResponse practice, Set<UUID> sectionKnowledgeIds) {
+        if (sectionKnowledgeIds.isEmpty()
+                || practice.getRelatedKnowledgeItemIds() == null
+                || practice.getRelatedKnowledgeItemIds().isEmpty()) {
+            return false;
+        }
+        return practice.getRelatedKnowledgeItemIds().stream().anyMatch(sectionKnowledgeIds::contains);
     }
 
     private List<DailySection> buildDefaultSections(DailyLesson lesson, String targetLanguage, String lessonType) {
@@ -279,7 +405,7 @@ public class StudyPlanService {
         return response;
     }
 
-    private DailyLessonResponse mapLesson(DailyLesson lesson) {
+    private DailyLessonResponse mapLesson(DailyLesson lesson, boolean includeContent) {
         DailyLessonResponse response = new DailyLessonResponse();
         response.setId(lesson.getId());
         response.setStudyPlanId(lesson.getStudyPlan().getId());
@@ -288,12 +414,12 @@ public class StudyPlanService {
         response.setLessonType(lesson.getLessonType());
         response.setStatus(lesson.getStatus());
         response.setSections(lesson.getSections().stream()
-                .map(this::mapSection)
+                .map(section -> mapSection(section, includeContent))
                 .toList());
         return response;
     }
 
-    private DailySectionResponse mapSection(DailySection section) {
+    private DailySectionResponse mapSection(DailySection section, boolean includeContent) {
         DailySectionResponse response = new DailySectionResponse();
         response.setId(section.getId());
         response.setType(section.getType());
@@ -301,12 +427,12 @@ public class StudyPlanService {
         response.setTitle(section.getTitle());
         response.setStatus(section.getStatus());
         response.setItems(section.getItems().stream()
-                .map(this::mapItem)
+                .map(item -> mapItem(item, includeContent))
                 .toList());
         return response;
     }
 
-    private DailyLearningItemResponse mapItem(DailyLearningItem item) {
+    private DailyLearningItemResponse mapItem(DailyLearningItem item, boolean includeContent) {
         DailyLearningItemResponse response = new DailyLearningItemResponse();
         response.setId(item.getId());
         response.setItemType(item.getItemType());
@@ -314,7 +440,20 @@ public class StudyPlanService {
         response.setAssignmentType(item.getAssignmentType());
         response.setOrderIndex(item.getOrderIndex());
         response.setStatus(item.getStatus());
+        if (includeContent) {
+            response.setContent(resolveItemContent(item));
+        }
         return response;
+    }
+
+    private Object resolveItemContent(DailyLearningItem item) {
+        if (KNOWLEDGE.equals(item.getItemType())) {
+            return contentKnowledgeClient.getKnowledgeItem(item.getItemId());
+        }
+        if (PRACTICE.equals(item.getItemType())) {
+            return contentPracticeClient.getPracticeItem(item.getItemId());
+        }
+        return null;
     }
 }
 

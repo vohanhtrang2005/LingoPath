@@ -32,6 +32,7 @@ public class AuthController {
         this.securityUtil = securityUtil;
     }
     
+    // Muc dich: Tao tai khoan moi cho student/admin va hash password.
     @PostMapping("/register")
     public ResponseEntity<ApiResponse<AuthResponse>> register(@RequestBody RegisterRequest request) {
         try {
@@ -43,6 +44,7 @@ public class AuthController {
         }
     }
     
+    // Muc dich: Xac thuc email/password, cap access token va refresh token cookie.
     @PostMapping("/login")
     public ResponseEntity<ApiResponse<AuthResponse>> login(@RequestBody LoginRequest loginDto) {
         try {
@@ -65,6 +67,7 @@ public class AuthController {
         }
     }
     
+    // Muc dich: Doi refresh token hop le trong cookie thanh access token moi.
     @PostMapping("/refresh")
     public ResponseEntity<ApiResponse<AuthResponse>> refresh(@CookieValue(name = "refresh_token", defaultValue = "") String refreshToken) {
         if (refreshToken.isEmpty()) return ResponseEntity.badRequest().body(ApiResponse.error("Chưa có refresh token ở cookie"));
@@ -85,6 +88,7 @@ public class AuthController {
         }
     }
     
+    // Muc dich: Xoa refresh token hien tai va clear cookie dang nhap.
     @PostMapping("/logout")
     public ResponseEntity<ApiResponse<Void>> logout(@CookieValue(name = "refresh_token", defaultValue = "") String refreshToken) {
         if (!refreshToken.isEmpty()) {

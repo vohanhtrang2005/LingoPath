@@ -7,6 +7,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 
 import java.util.List;
+import java.util.UUID;
 
 @Component
 public class ContentKnowledgeClient {
@@ -28,5 +29,12 @@ public class ContentKnowledgeClient {
                         .build())
                 .retrieve()
                 .body(new ParameterizedTypeReference<>() {});
+    }
+
+    public ContentKnowledgeItemResponse getKnowledgeItem(UUID id) {
+        return restClient.get()
+                .uri("/api/content/knowledge/{id}", id)
+                .retrieve()
+                .body(ContentKnowledgeItemResponse.class);
     }
 }

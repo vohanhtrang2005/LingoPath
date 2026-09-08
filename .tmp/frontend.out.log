@@ -1,0 +1,10 @@
+
+> magic-patterns-vite-template@0.0.1 dev
+> npx vite --host 0.0.0.0
+
+
+  VITE v5.4.21  ready in 621 ms
+
+  ➜  Local:   http://localhost:5173/
+  ➜  Network: http://172.28.160.1:5173/
+  ➜  Network: http://192.168.100.187:5173/

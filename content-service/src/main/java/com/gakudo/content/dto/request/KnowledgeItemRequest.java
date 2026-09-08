@@ -1,4 +1,4 @@
-﻿package com.gakudo.content.dto.request;
+package com.gakudo.content.dto.request;
 
 import java.util.Map;
 import java.util.List;
@@ -15,6 +15,8 @@ public class KnowledgeItemRequest {
     private Map<String, Object> contentJson;
     private Integer orderIndex;
     private String difficulty;
+    private Integer appearanceCount;
+    private String frequencyLevel;
     private List<SourceReferenceRequest> sourceReferences;
 
     public String getLanguage() { return language; }
@@ -37,6 +39,10 @@ public class KnowledgeItemRequest {
     public void setOrderIndex(Integer orderIndex) { this.orderIndex = orderIndex; }
     public String getDifficulty() { return difficulty; }
     public void setDifficulty(String difficulty) { this.difficulty = difficulty; }
+    public Integer getAppearanceCount() { return appearanceCount; }
+    public void setAppearanceCount(Integer appearanceCount) { this.appearanceCount = appearanceCount; }
+    public String getFrequencyLevel() { return frequencyLevel; }
+    public void setFrequencyLevel(String frequencyLevel) { this.frequencyLevel = frequencyLevel; }
     public List<SourceReferenceRequest> getSourceReferences() { return sourceReferences; }
     public void setSourceReferences(List<SourceReferenceRequest> sourceReferences) { this.sourceReferences = sourceReferences; }
 }

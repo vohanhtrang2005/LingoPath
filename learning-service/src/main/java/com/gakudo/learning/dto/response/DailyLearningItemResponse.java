@@ -9,6 +9,7 @@ public class DailyLearningItemResponse {
     private String assignmentType;
     private Integer orderIndex;
     private String status;
+    private Object content;
 
     public UUID getId() { return id; }
     public void setId(UUID id) { this.id = id; }
@@ -22,4 +23,6 @@ public class DailyLearningItemResponse {
     public void setOrderIndex(Integer orderIndex) { this.orderIndex = orderIndex; }
     public String getStatus() { return status; }
     public void setStatus(String status) { this.status = status; }
+    public Object getContent() { return content; }
+    public void setContent(Object content) { this.content = content; }
 }

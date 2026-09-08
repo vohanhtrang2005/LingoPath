@@ -1,4 +1,4 @@
-﻿package com.gakudo.content.service;
+package com.gakudo.content.service;
 
 import com.gakudo.content.dto.request.KnowledgeItemRequest;
 import com.gakudo.content.dto.request.SourceReferenceRequest;
@@ -10,7 +10,9 @@ import com.gakudo.content.model.SourceReference;
 import com.gakudo.content.repository.BookRepository;
 import com.gakudo.content.repository.KnowledgeItemRepository;
 import com.gakudo.content.repository.SourceReferenceRepository;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -44,6 +46,8 @@ public class KnowledgeItemService {
         item.setContentJson(request.getContentJson());
         item.setOrderIndex(request.getOrderIndex());
         item.setDifficulty(request.getDifficulty());
+        item.setAppearanceCount(request.getAppearanceCount());
+        item.setFrequencyLevel(request.getFrequencyLevel());
         if (request.getSourceReferences() != null) {
             item.setSourceReferences(buildSourceReferences(item, request.getSourceReferences()));
         }
@@ -76,9 +80,15 @@ public class KnowledgeItemService {
                 .toList();
     }
 
+    public KnowledgeItemResponse getKnowledgeItem(UUID id) {
+        return knowledgeRepository.findById(id)
+                .map(this::mapToResponse)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Knowledge item not found"));
+    }
+
     public List<SourceReferenceResponse> getSourceReferences(UUID knowledgeItemId) {
         if (!knowledgeRepository.existsById(knowledgeItemId)) {
-            throw new RuntimeException("Knowledge item not found");
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Knowledge item not found");
         }
         return sourceReferenceRepository.findByKnowledgeItemId(knowledgeItemId)
                 .stream()
@@ -107,9 +117,9 @@ public class KnowledgeItemService {
     private Book resolveBook(SourceReferenceRequest request) {
         if (request.getBookId() != null) {
             return bookRepository.findById(request.getBookId())
-                    .orElseThrow(() -> new RuntimeException("Book not found"));
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Book not found"));
         }
-        throw new RuntimeException("Source reference requires bookId");
+        throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Source reference requires bookId");
     }
 
     private KnowledgeItemResponse mapToResponse(KnowledgeItem item) {
@@ -125,6 +135,8 @@ public class KnowledgeItemService {
         response.setContentJson(item.getContentJson());
         response.setOrderIndex(item.getOrderIndex());
         response.setDifficulty(item.getDifficulty());
+        response.setAppearanceCount(item.getAppearanceCount());
+        response.setFrequencyLevel(item.getFrequencyLevel());
         return response;
     }
 

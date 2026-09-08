@@ -11,11 +11,26 @@ interface LoginProps {
 export function Login({ initialMode, showGoogleSignIn }: LoginProps) {
   const navigate = useNavigate();
 
+  const handleAuthenticated = (mode: AuthMode) => {
+    if (mode === 'signup') {
+      navigate('/onboarding');
+      return;
+    }
+
+    try {
+      const rawUser = localStorage.getItem('currentUser');
+      const user = rawUser ? JSON.parse(rawUser) as { role?: string } : null;
+      navigate(user?.role === 'ADMIN' ? '/admin/books' : '/learn');
+    } catch {
+      navigate('/learn');
+    }
+  };
+
   return (
     <AuthScreen
       initialMode={initialMode}
       showGoogleSignIn={showGoogleSignIn}
-      onAuthenticated={(mode) => navigate(mode === 'signup' ? '/onboarding' : '/learn')} />);
+      onAuthenticated={handleAuthenticated} />);
 
 
 }

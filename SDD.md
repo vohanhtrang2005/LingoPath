@@ -132,6 +132,8 @@ It stores:
 - books;
 - document metadata;
 - knowledge items;
+- source exercises;
+- practice items;
 - source references;
 - item review status.
 
@@ -191,6 +193,8 @@ status
 contentJson
 orderIndex
 difficulty
+appearanceCount
+frequencyLevel
 sourceReferences
 createdAt
 updatedAt
@@ -241,6 +245,16 @@ Example grammar content:
 }
 ```
 
+`difficulty` and frequency metadata must stay separate:
+
+```text
+difficulty = linguistic or cognitive difficulty
+appearanceCount = detected number of appearances in source material
+frequencyLevel = LOW, MEDIUM or HIGH based on appearance analysis
+```
+
+Frequency can influence priority, notes or review emphasis, but it is not the same as difficulty.
+
 ## 4.4 SourceReference
 
 `SourceReference` links official knowledge to evidence.
@@ -261,6 +275,125 @@ evidenceText
 ```
 
 No separate `SourceSection` table is required in the early design. If source structure becomes complex later, `SourceSection` can be reintroduced.
+
+## 4.5 SourceExercise
+
+`SourceExercise` preserves an original exercise block from an uploaded book or document.
+
+It is the source-level record, not necessarily the same as the student-facing daily practice assignment.
+
+Recommended fields:
+
+```text
+id
+bookId
+language
+levelSystem
+levelCode
+sectionTitle
+sectionOrder
+pageStart
+pageEnd
+locationText
+instruction
+rawContentJson
+answerKeyJson
+sourceReferenceJson
+status
+origin
+confidence
+createdAt
+updatedAt
+```
+
+Examples:
+
+```text
+5 fill-in-the-blank questions with a shared word bank
+100 mixed vocabulary questions
+one reading passage with 4 questions
+one listening dialogue with 5 questions
+```
+
+Design rule:
+
+```text
+SourceExercise keeps the original exercise boundary and source traceability.
+```
+
+## 4.6 PracticeItem
+
+`PracticeItem` is the student-facing practice unit that can be scheduled into a daily lesson.
+
+It belongs to Content Service because it is official curriculum/practice content and must go through the same approval lifecycle as `KnowledgeItem`.
+
+Recommended fields:
+
+```text
+id
+sourceExerciseId nullable
+language
+levelSystem
+levelCode
+skill
+practiceType
+status
+origin
+confidence
+difficulty
+orderIndex
+promptJson
+answerJson
+explanationJson
+relatedKnowledgeItemIds
+sourceReferenceJson
+createdAt
+updatedAt
+```
+
+`skill` values:
+
+```text
+VOCABULARY
+GRAMMAR
+KANJI
+READING
+LISTENING
+REVIEW
+TEST
+```
+
+`practiceType` examples:
+
+```text
+MULTIPLE_CHOICE
+FILL_BLANK
+FILL_BLANK_GROUP
+MATCHING
+REORDER_SENTENCE
+TRUE_FALSE
+SHORT_ANSWER
+READING_QUESTION_SET
+LISTENING_QUESTION_SET
+MIXED_SET
+```
+
+Practice items can be:
+
+- extracted directly from a small source exercise;
+- a grouped exercise with shared word bank or shared passage;
+- a smaller subset of a large source exercise;
+- admin-created;
+- AI-generated when the source has no suitable exercise.
+
+Design rule:
+
+```text
+The planner assigns PracticeItem records, not individual sub-questions.
+Scoring may happen per sub-question inside promptJson/answerJson.
+```
+
+If a source exercise has shared context, shared instruction, shared word bank, shared passage or shared audio, the generated `PracticeItem` must preserve enough context for the student to answer it.
 
 ---
 
@@ -366,7 +499,64 @@ IMPORTED
 
 This avoids duplicate candidate tables and copy logic. Admin review updates the same record's status.
 
-## 5.5 Mixed book processing
+## 5.5 SourceExercise extraction
+
+AI Service extracts `SourceExercise` records when a chunk or group of chunks contains exercises.
+
+Extraction must detect exercise boundaries:
+
+```text
+instruction
+shared word bank
+shared passage
+shared audio
+question numbering
+answer key
+page and section range
+```
+
+AI extraction should not blindly create one isolated practice item per sentence if the original exercise depends on shared context.
+
+For a large exercise, AI Service should keep the original exercise as one `SourceExercise` and analyze sub-questions inside it.
+
+Example:
+
+```text
+SourceExercise:
+  100 mixed fill-in-the-blank questions
+
+Sub-question metadata:
+  q1 -> relatedKnowledgeItemIds=[...], skill=VOCABULARY, difficulty=EASY
+  q2 -> relatedKnowledgeItemIds=[...], skill=GRAMMAR, difficulty=MEDIUM
+```
+
+This metadata is later used to create suitable `PracticeItem` subsets for daily lessons.
+
+## 5.6 PracticeItem generation from SourceExercise
+
+`PracticeItem` records can be created from `SourceExercise` records.
+
+Rules:
+
+1. Small source exercises can become one `PracticeItem`.
+2. Grouped exercises with shared word banks should remain grouped.
+3. Reading/listening passages with related questions should remain grouped.
+4. Large exercises can be split into multiple smaller `PracticeItem` records.
+5. Each generated `PracticeItem` must keep `sourceExerciseId` and source evidence.
+6. Each generated `PracticeItem` must preserve enough context for its sub-questions.
+7. Each sub-question should map to related `KnowledgeItem` records when possible.
+
+Example:
+
+```text
+SourceExercise: Exercise 5, page 80, 100 questions
+PracticeItem A: questions 3, 18, 41, 66, 80 for today's vocabulary
+PracticeItem B: questions 2, 9, 21 for today's grammar
+```
+
+The daily planner may schedule `PracticeItem A` without losing traceability to the original source exercise.
+
+## 5.7 Mixed book processing
 
 For a mixed book, AI Service processes each chunk independently.
 
@@ -406,8 +596,10 @@ Upload book/document
 -> classify chunk type
 -> embed chunks
 -> extract AI-created items
+-> extract source exercises
+-> generate practice items from source exercises when suitable
 -> admin review
--> publish KnowledgeItem
+-> publish KnowledgeItem and PracticeItem
 ```
 
 ## 6.2 ProcessingJob
@@ -579,10 +771,40 @@ Recommended fields:
 ```text
 id
 dailySectionId
-knowledgeItemId
-practiceItemId
+itemType
+itemId
+assignmentType
 orderIndex
 status
+```
+
+`itemType` values:
+
+```text
+KNOWLEDGE
+PRACTICE
+REVIEW
+TEST
+```
+
+`itemId` points to the owning service record according to `itemType`.
+
+Examples:
+
+```text
+itemType = KNOWLEDGE -> itemId = KnowledgeItem.id
+itemType = PRACTICE  -> itemId = PracticeItem.id
+```
+
+`assignmentType` examples:
+
+```text
+NEW_LEARNING
+SOURCE_PRACTICE
+AI_GENERATED_PRACTICE
+REVIEW
+TEST
+GAP_REVIEW
 ```
 
 Statuses:
@@ -639,8 +861,11 @@ Inputs:
 ```text
 LearningProfile
 Published KnowledgeItems
+Published PracticeItems
 Knowledge orderIndex
+Practice orderIndex
 Knowledge type
+Practice skill and type
 Source order
 Duration
 Weakness notes
@@ -664,10 +889,15 @@ Planning rules:
 2. Order content mainly by source order and `orderIndex`.
 3. Spread required content across available days.
 4. Balance daily sections across vocabulary, grammar, kanji, listening and reading where available.
-5. Insert review items.
-6. Return feasibility warning if selected duration is too short.
-7. Never rewrite completed learning history.
-8. Adjust only future daily lessons during adaptation.
+5. Attach suitable practice items to lesson sections when available.
+6. Prefer source-backed practice over AI-generated practice.
+7. Preserve grouped practice context.
+8. Do not split internal sub-questions of a `PracticeItem` across different days.
+9. Large source exercises may contribute smaller `PracticeItem` subsets.
+10. Insert review items.
+11. Return feasibility warning if selected duration is too short.
+12. Never rewrite completed learning history.
+13. Adjust only future daily lessons during adaptation.
 
 AI may provide notes or candidate difficulty, but AI does not create the final schedule.
 
@@ -734,26 +964,21 @@ Screens/API should support:
 
 # 10. Assessment and Adaptation Design
 
-## 10.1 PracticeItem
+## 10.1 PracticeItem ownership
 
-Recommended fields:
+`PracticeItem` belongs to Content Service.
+
+Learning Service does not own official practice content. It stores only assignments, attempts, scores and progress.
+
+When a user opens a lesson content API, Learning Service may aggregate:
 
 ```text
-id
-knowledgeItemId
-type
-questionJson
-answerJson
-explanationJson
-sourceReferenceId
-status
+DailyLesson
+DailySection
+DailyLearningItem
+KnowledgeItem details from Content Service
+PracticeItem details from Content Service
 ```
-
-Practice items can come from:
-
-- source book exercises;
-- AI-extracted exercises with `AI_CANDIDATE` status;
-- AI-generated but source-grounded practice items approved by admin.
 
 ## 10.2 Attempt
 
@@ -765,10 +990,34 @@ Recommended fields:
 id
 userId
 practiceItemId
+dailyLessonId
+dailySectionId
 answerJson
 score
 isCorrect
+resultJson
 createdAt
+```
+
+For grouped practice, `resultJson` stores per-sub-question results.
+
+Example:
+
+```json
+{
+  "subResults": [
+    {
+      "questionId": "q1",
+      "correct": true,
+      "relatedKnowledgeItemIds": ["..."]
+    },
+    {
+      "questionId": "q2",
+      "correct": false,
+      "relatedKnowledgeItemIds": ["..."]
+    }
+  ]
+}
 ```
 
 ## 10.3 Scoring
@@ -781,6 +1030,10 @@ AI may be used for:
 - mistake summary;
 - qualitative analysis;
 - suggestions.
+
+For grouped practice, scoring should happen per sub-question and then roll up to a total score.
+
+Wrong sub-questions should update progress only for related `KnowledgeItem` records, not for every knowledge item in the whole practice group.
 
 ## 10.4 KnowledgeGap
 
@@ -893,6 +1146,8 @@ Examples:
 GET /internal/content/knowledge?language=JAPANESE&levelSystem=JLPT&levelCode=N3
 GET /internal/content/knowledge/{id}
 GET /internal/content/knowledge/{id}/source
+GET /internal/content/practice-items?language=JAPANESE&levelSystem=JLPT&levelCode=N3&skill=VOCABULARY
+GET /internal/content/practice-items/{id}
 ```
 
 ## 12.3 Content to AI
@@ -905,6 +1160,8 @@ Examples:
 POST /internal/ai/documents/{bookId}/chunk
 POST /internal/ai/chunks/{chunkId}/embed
 POST /internal/ai/chunks/{chunkId}/extract-candidates
+POST /internal/ai/chunks/{chunkId}/extract-source-exercises
+POST /internal/ai/source-exercises/{sourceExerciseId}/generate-practice-items
 ```
 
 ## 12.4 Learning to AI
@@ -936,6 +1193,8 @@ roles
 ```text
 books
 knowledge_items
+source_exercises
+practice_items
 source_references
 processing_jobs
 ```
@@ -957,7 +1216,6 @@ study_plans
 daily_lessons
 daily_sections
 daily_learning_items
-practice_items
 attempts
 test_attempts
 knowledge_gaps
@@ -1004,7 +1262,10 @@ plan_revisions
 - Hybrid retrieval.
 - AI chunk classification.
 - AI-created `KnowledgeItem` extraction.
+- SourceExercise extraction.
 - AI-created `PracticeItem` extraction.
+- Large exercise splitting into smaller PracticeItem subsets.
+- Sub-question to KnowledgeItem mapping.
 - Admin review and publish.
 - RabbitMQ if DB-backed jobs are no longer enough.
 
@@ -1061,18 +1322,21 @@ Already aligned:
 
 - Auth Service exists.
 - Gateway exists.
-- RS256/JWKS design has been introduced.
+- RS256/JWKS has been introduced.
 - Gateway identity header injection has been introduced.
 - Content Service has `Book`, `KnowledgeItem`, `SourceReference`.
+- Learning Service has `LearningProfile`, `StudyPlan`, `DailyLesson`, `DailySection`, `DailyLearningItem`.
+- Learning Service can create a deterministic early study plan from published `KnowledgeItem` records.
 - Learning Service has early `ReviewSchedule`.
 
 Needs next implementation:
 
-- add language and level fields to `Book` and `KnowledgeItem`;
-- add learning profile and study plan;
-- add daily lesson and daily section;
-- add practice item model;
-- add `origin` and `confidence` fields for AI-reviewed content;
+- add `SourceExercise` model and APIs;
+- add `PracticeItem` model and APIs in Content Service;
+- add lesson content aggregation API in Learning Service;
+- add practice attempt API;
+- add `LearningProgress`;
+- update review scheduling from practice results;
 - add document processing pipeline.
 
 

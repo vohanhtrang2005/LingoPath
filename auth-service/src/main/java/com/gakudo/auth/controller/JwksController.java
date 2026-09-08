@@ -16,6 +16,7 @@ public class JwksController {
         this.jwtKeyProvider = jwtKeyProvider;
     }
 
+    // Muc dich: Cong khai public keys de Gateway validate JWT RS256.
     @GetMapping("/.well-known/jwks.json")
     public Map<String, Object> jwks() {
         return jwtKeyProvider.publicJwkSet().toJSONObject();

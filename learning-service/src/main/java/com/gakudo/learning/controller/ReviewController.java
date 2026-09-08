@@ -22,6 +22,7 @@ public class ReviewController {
         this.reviewScheduleService = reviewScheduleService;
     }
 
+    // Muc dich: Submit ket qua review thu cong cho ReviewSchedule cu/flashcard optional.
     @PostMapping("/{id}/submit")
     public ResponseEntity<ReviewScheduleResponse> submitReview(
             @PathVariable UUID id,

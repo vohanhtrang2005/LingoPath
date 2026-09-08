@@ -1,4 +1,4 @@
-import { BookOpen, CalendarDays, Home, Library, LogIn } from "lucide-react";
+import { BookOpen, CalendarDays, Home, Library, LogIn, UploadCloud } from "lucide-react";
 import { NavLink } from "react-router-dom";
 import type { ReactNode } from "react";
 
@@ -11,7 +11,8 @@ const navItems = [
   { to: "/login", label: "Login", icon: LogIn },
   { to: "/plans/new", label: "Create Plan", icon: CalendarDays },
   { to: "/lessons", label: "Lessons", icon: BookOpen },
-  { to: "/knowledge", label: "Knowledge", icon: Library }
+  { to: "/knowledge", label: "Knowledge", icon: Library },
+  { to: "/admin/books", label: "Admin Books", icon: UploadCloud }
 ];
 
 export function AppShell({ children }: AppShellProps) {

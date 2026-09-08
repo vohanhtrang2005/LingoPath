@@ -1,4 +1,4 @@
-﻿package com.gakudo.content.dto.response;
+package com.gakudo.content.dto.response;
 
 import java.util.Map;
 import java.util.UUID;
@@ -15,6 +15,8 @@ public class KnowledgeItemResponse {
     private Map<String, Object> contentJson;
     private Integer orderIndex;
     private String difficulty;
+    private Integer appearanceCount;
+    private String frequencyLevel;
 
     public UUID getId() { return id; }
     public void setId(UUID id) { this.id = id; }
@@ -38,6 +40,10 @@ public class KnowledgeItemResponse {
     public void setOrderIndex(Integer orderIndex) { this.orderIndex = orderIndex; }
     public String getDifficulty() { return difficulty; }
     public void setDifficulty(String difficulty) { this.difficulty = difficulty; }
+    public Integer getAppearanceCount() { return appearanceCount; }
+    public void setAppearanceCount(Integer appearanceCount) { this.appearanceCount = appearanceCount; }
+    public String getFrequencyLevel() { return frequencyLevel; }
+    public void setFrequencyLevel(String frequencyLevel) { this.frequencyLevel = frequencyLevel; }
 }
 
 

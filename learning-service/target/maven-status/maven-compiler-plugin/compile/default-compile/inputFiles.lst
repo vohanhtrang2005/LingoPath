@@ -1,9 +1,11 @@
 C:\hanhtrang\GAKUDO\learning-service\src\main\java\com\gakudo\learning\client\ContentKnowledgeClient.java
+C:\hanhtrang\GAKUDO\learning-service\src\main\java\com\gakudo\learning\client\ContentPracticeClient.java
 C:\hanhtrang\GAKUDO\learning-service\src\main\java\com\gakudo\learning\controller\ReviewController.java
 C:\hanhtrang\GAKUDO\learning-service\src\main\java\com\gakudo\learning\controller\StudyPlanController.java
 C:\hanhtrang\GAKUDO\learning-service\src\main\java\com\gakudo\learning\dto\request\CreateStudyPlanRequest.java
 C:\hanhtrang\GAKUDO\learning-service\src\main\java\com\gakudo\learning\dto\request\ReviewSubmitRequest.java
 C:\hanhtrang\GAKUDO\learning-service\src\main\java\com\gakudo\learning\dto\response\ContentKnowledgeItemResponse.java
+C:\hanhtrang\GAKUDO\learning-service\src\main\java\com\gakudo\learning\dto\response\ContentPracticeItemResponse.java
 C:\hanhtrang\GAKUDO\learning-service\src\main\java\com\gakudo\learning\dto\response\DailyLearningItemResponse.java
 C:\hanhtrang\GAKUDO\learning-service\src\main\java\com\gakudo\learning\dto\response\DailyLessonResponse.java
 C:\hanhtrang\GAKUDO\learning-service\src\main\java\com\gakudo\learning\dto\response\DailySectionResponse.java

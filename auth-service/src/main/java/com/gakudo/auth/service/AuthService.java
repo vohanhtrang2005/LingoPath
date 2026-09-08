@@ -36,6 +36,7 @@ public class AuthService {
     @Transactional
     public RefreshToken createRefreshToken(User user, long expirationSeconds) {
         refreshTokenRepository.deleteByUser(user);
+        refreshTokenRepository.flush();
         RefreshToken newRefreshToken = new RefreshToken();
         newRefreshToken.setUser(user);
         newRefreshToken.setToken(UUID.randomUUID().toString());

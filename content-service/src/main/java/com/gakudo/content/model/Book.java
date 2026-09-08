@@ -1,4 +1,4 @@
-﻿package com.gakudo.content.model;
+package com.gakudo.content.model;
 
 import jakarta.persistence.*;
 import java.time.LocalDateTime;

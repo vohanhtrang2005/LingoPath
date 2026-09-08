@@ -9,6 +9,10 @@ spring:
     username: postgres
     password: 123
     driver-class-name: org.postgresql.Driver
+  servlet:
+    multipart:
+      max-file-size: 100MB
+      max-request-size: 100MB
   jpa:
     hibernate:
       ddl-auto: update
@@ -17,3 +21,11 @@ spring:
       hibernate:
         format_sql: true
         dialect: org.hibernate.dialect.PostgreSQLDialect
+
+gakudo:
+  content:
+    upload-dir: ${GAKUDO_CONTENT_UPLOAD_DIR:uploads}
+    ocr:
+      language: ${GAKUDO_CONTENT_OCR_LANGUAGE:eng+jpn}
+      datapath: ${GAKUDO_CONTENT_OCR_DATAPATH:}
+      pdf-dpi: ${GAKUDO_CONTENT_OCR_PDF_DPI:250}
