@@ -76,6 +76,8 @@ export type BookDocument = {
   documentType: DocumentType;
   status: DocumentStatus;
   errorMessage?: string;
+  totalPages?: number | null;
+  processedPages?: number | null;
   createdAt?: string;
   updatedAt?: string;
 };

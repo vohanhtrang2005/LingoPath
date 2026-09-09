@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { AlertCircleIcon, ArrowLeftIcon, LoaderCircleIcon, XIcon } from "lucide-react";
 import { UploadPanel, formatBytes } from "../components/UploadPanel";
@@ -31,6 +31,10 @@ export function AdminBookDocumentsPage() {
   const [details, setDetails] = useState<BookDocument | null>(null);
   const [extractNotice, setExtractNotice] = useState<string | null>(null);
 
+  useEffect(() => {
+    setDetails(previous => previous ? documents.find(doc => doc.id === previous.id) ?? null : null);
+  }, [documents]);
+
   const loadPages = useCallback(async (document: BookDocument) => {
     setSelected(document);
     setPagesLoading(true);
@@ -48,17 +52,19 @@ export function AdminBookDocumentsPage() {
 
   const handleExtract = async (documentId: string) => {
     setExtractNotice(null);
-    const updated = await extract(documentId);
-    if (!updated) {
-      setExtractNotice("Extraction request failed. Please try again.");
-      return;
-    }
-    if (updated.status === "FAILED") {
-      setExtractNotice(updated.errorMessage || "Extraction failed.");
-      return;
-    }
-    if (updated.status === "EXTRACTED") {
-      void loadPages(updated);
+    try {
+      const updated = await extract(documentId);
+      if (!updated) return;
+      if (updated.status === "FAILED") {
+        setExtractNotice(updated.errorMessage || "Extraction failed.");
+      } else if (updated.status === "EXTRACTED") {
+        void loadPages(updated);
+      } else if (selected?.id === documentId) {
+        setSelected(null);
+        setPages([]);
+      }
+    } catch (error) {
+      setExtractNotice(error instanceof Error ? error.message : "Could not start extraction.");
     }
   };
 

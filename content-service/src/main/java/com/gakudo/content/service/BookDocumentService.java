@@ -16,6 +16,8 @@ import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.rendering.ImageType;
 import org.apache.pdfbox.rendering.PDFRenderer;
 import org.apache.pdfbox.text.PDFTextStripper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -35,6 +37,7 @@ import java.util.UUID;
 
 @Service
 public class BookDocumentService {
+    private static final Logger log = LoggerFactory.getLogger(BookDocumentService.class);
     private static final int PDF_TEXT_MIN_AVERAGE_CHARS_PER_PAGE = 50;
 
     private final BookRepository bookRepository;
@@ -42,6 +45,7 @@ public class BookDocumentService {
     private final ExtractedPageTextRepository pageTextRepository;
     private final DocumentTypeDetector documentTypeDetector;
     private final OcrService ocrService;
+    private final DocumentExtractionStateService extractionState;
     private final Path uploadRoot;
     private final float ocrPdfDpi;
 
@@ -51,6 +55,7 @@ public class BookDocumentService {
             ExtractedPageTextRepository pageTextRepository,
             DocumentTypeDetector documentTypeDetector,
             OcrService ocrService,
+            DocumentExtractionStateService extractionState,
             @Value("${gakudo.content.upload-dir:uploads}") String uploadDir,
             @Value("${gakudo.content.ocr.pdf-dpi:250}") float ocrPdfDpi) {
         this.bookRepository = bookRepository;
@@ -58,6 +63,7 @@ public class BookDocumentService {
         this.pageTextRepository = pageTextRepository;
         this.documentTypeDetector = documentTypeDetector;
         this.ocrService = ocrService;
+        this.extractionState = extractionState;
         this.uploadRoot = Path.of(uploadDir).toAbsolutePath().normalize();
         this.ocrPdfDpi = ocrPdfDpi;
     }
@@ -115,15 +121,26 @@ public class BookDocumentService {
 
     @Transactional
     public BookDocumentResponse extractDocument(UUID documentId) {
-        BookDocument document = documentRepository.findById(documentId)
+        BookDocument document = documentRepository.findForExtraction(documentId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Document not found"));
+
+        if (document.getStatus() == DocumentStatus.EXTRACTING) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Document extraction is already in progress");
+        }
+        resolveStoredPath(document);
 
         document.setStatus(DocumentStatus.EXTRACTING);
         document.setErrorMessage(null);
-        documentRepository.saveAndFlush(document);
-        pageTextRepository.deleteByDocumentId(document.getId());
+        document.setProcessedPages(0);
+        document.setTotalPages(null);
+        return mapDocumentToResponse(documentRepository.saveAndFlush(document));
+    }
 
+    public void processExtraction(UUID documentId) {
         try {
+            BookDocument document = documentRepository.findById(documentId)
+                    .orElseThrow(() -> new IllegalStateException("Document not found"));
+            log.info("Extracting document id={}, file={}", documentId, document.getOriginalFileName());
             List<ExtractedPageText> pages = switch (document.getDocumentType()) {
                 case PDF -> extractPdfText(document);
                 case TEXT -> extractPlainText(document);
@@ -134,15 +151,12 @@ public class BookDocumentService {
                 case UNKNOWN -> throw new UnsupportedOperationException("Unsupported document type");
             };
 
-            pageTextRepository.saveAll(pages);
-            document.setStatus(DocumentStatus.EXTRACTED);
-            document.setErrorMessage(null);
+            extractionState.complete(documentId, pages);
+            log.info("Extraction complete: documentId={}, pages={}", documentId, pages.size());
         } catch (Exception e) {
-            document.setStatus(DocumentStatus.FAILED);
-            document.setErrorMessage(e.getMessage());
+            log.error("Extraction failed: documentId={}", documentId, e);
+            extractionState.fail(documentId, e.getMessage());
         }
-
-        return mapDocumentToResponse(documentRepository.save(document));
     }
 
     public List<ExtractedPageTextResponse> getExtractedPages(UUID documentId) {
@@ -162,6 +176,7 @@ public class BookDocumentService {
         try (PDDocument pdf = Loader.loadPDF(filePath.toFile())) {
             PDFTextStripper stripper = new PDFTextStripper();
             int numberOfPages = pdf.getNumberOfPages();
+            extractionState.updateProgress(document.getId(), 0, numberOfPages);
 
             for (int pageNumber = 1; pageNumber <= numberOfPages; pageNumber++) {
                 stripper.setStartPage(pageNumber);
@@ -209,8 +224,14 @@ public class BookDocumentService {
 
             for (int pageIndex = 0; pageIndex < numberOfPages; pageIndex++) {
                 BufferedImage image = renderer.renderImageWithDPI(pageIndex, ocrPdfDpi, ImageType.RGB);
-                String text = ocrService.extractImage(image);
-                pages.add(buildPage(document, pageIndex + 1, text, ExtractionMethod.PDF_OCR, null));
+                try {
+                    String text = ocrService.extractImage(image);
+                    pages.add(buildPage(document, pageIndex + 1, text, ExtractionMethod.PDF_OCR, null));
+                } finally {
+                    image.flush();
+                }
+                extractionState.updateProgress(document.getId(), pageIndex + 1, numberOfPages);
+                log.info("OCR progress: documentId={}, page={}/{}", document.getId(), pageIndex + 1, numberOfPages);
             }
         }
 
@@ -261,6 +282,8 @@ public class BookDocumentService {
         response.setDocumentType(document.getDocumentType());
         response.setStatus(document.getStatus());
         response.setErrorMessage(document.getErrorMessage());
+        response.setTotalPages(document.getTotalPages());
+        response.setProcessedPages(document.getProcessedPages());
         response.setCreatedAt(document.getCreatedAt());
         response.setUpdatedAt(document.getUpdatedAt());
         return response;

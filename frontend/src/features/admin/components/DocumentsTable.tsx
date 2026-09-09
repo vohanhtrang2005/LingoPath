@@ -58,16 +58,27 @@ export function DocumentsTable({
       aria-labelledby="documents-title"
       className="mt-6 rounded-[2rem] border border-white/70 bg-white/85 p-5 shadow-[0_14px_28px_-24px_rgba(120,88,70,0.9)] sm:p-6"
     >
-      <h2 id="documents-title" className="font-display text-sm font-bold text-ink">
-        Documents
-      </h2>
+      <div className="flex items-center justify-between gap-3">
+        <h2 id="documents-title" className="font-display text-sm font-bold text-ink">
+          Documents
+        </h2>
+        <button type="button" onClick={onRetry} disabled={loading}
+          title="Refresh documents" aria-label="Refresh documents"
+          className="flex h-9 w-9 items-center justify-center rounded-full bg-cream-100 text-ink-soft hover:bg-cream-200 disabled:opacity-50">
+          <RefreshCwIcon className="h-4 w-4" aria-hidden="true" />
+        </button>
+      </div>
+
+      {error && documents.length > 0 ? (
+        <p role="alert" className="mt-3 text-sm text-[#b9524f]">{error}</p>
+      ) : null}
 
       {loading ? (
         <p className="flex items-center justify-center gap-2 py-10 text-sm font-semibold text-ink-soft">
           <LoaderCircleIcon className="h-4 w-4 animate-spin" aria-hidden="true" />
           Loading documents...
         </p>
-      ) : error ? (
+      ) : error && documents.length === 0 ? (
         <div role="alert" className="mt-5 rounded-[1.5rem] bg-peach-100/80 px-5 py-6 text-center">
           <p className="flex items-center justify-center gap-2 font-display text-sm font-bold text-[#a1552c]">
             <AlertCircleIcon className="h-4 w-4" aria-hidden="true" />
@@ -166,6 +177,13 @@ export function DocumentsTable({
                         ) : null}
                         {busy && document.status !== "EXTRACTING" ? "EXTRACTING" : document.status}
                       </span>
+                      {document.totalPages != null && document.totalPages > 0 ? (
+                        <span className="mt-1 block whitespace-nowrap text-xs tabular-nums text-ink-soft">
+                          {document.processedPages ?? 0} / {document.totalPages} pages
+                        </span>
+                      ) : document.status === "EXTRACTING" ? (
+                        <span className="mt-1 block whitespace-nowrap text-xs text-ink-soft">Queued / preparing</span>
+                      ) : null}
                     </td>
                     <td className="max-w-[14rem] px-3 py-4 text-sm text-[#b9524f]">
                       {document.errorMessage ? (
@@ -188,7 +206,7 @@ export function DocumentsTable({
                           <button
                             type="button"
                             onClick={() => onExtract(document.id)}
-                            disabled={busy}
+                            disabled={busy || extractingId !== null}
                             className={`inline-flex items-center gap-1.5 rounded-full px-3.5 py-2 font-display text-xs font-bold text-white transition-colors duration-150 ease-out focus:outline-none focus-visible:ring-2 focus-visible:ring-peach-400 ${
                               busy
                                 ? "cursor-not-allowed bg-peach-200"
@@ -213,7 +231,7 @@ export function DocumentsTable({
                             <button
                               type="button"
                               onClick={() => onExtract(document.id)}
-                              disabled={busy}
+                              disabled={busy || extractingId !== null}
                               className="inline-flex items-center gap-1.5 rounded-full bg-cream-100 px-3.5 py-2 font-display text-xs font-bold text-ink transition-colors duration-150 ease-out hover:bg-cream-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-peach-400 disabled:cursor-not-allowed disabled:text-ink-faint"
                             >
                               <RefreshCwIcon className="h-3.5 w-3.5" aria-hidden="true" />

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { contentApi } from "../../../api/contentApi";
 import type { Book, BookDocument } from "../../../types/content";
 
@@ -12,6 +12,9 @@ export function useBookDocuments(bookId: string) {
   const [documentsLoading, setDocumentsLoading] = useState(true);
 
   const [extractingId, setExtractingId] = useState<string | null>(null);
+  const loadSequence = useRef(0);
+  const startingExtraction = useRef(false);
+  const currentBookId = useRef(bookId);
 
   const loadBook = useCallback(async () => {
     if (!bookId) {
@@ -34,7 +37,8 @@ export function useBookDocuments(bookId: string) {
     }
   }, [bookId]);
 
-  const loadDocuments = useCallback(async () => {
+  const loadDocuments = useCallback(async (silent = false) => {
+    const sequence = ++loadSequence.current;
     if (!bookId) {
       setDocuments([]);
       setDocumentsError("Book id is missing.");
@@ -42,39 +46,78 @@ export function useBookDocuments(bookId: string) {
       return;
     }
 
-    setDocumentsLoading(true);
-    setDocumentsError(null);
+    if (!silent) setDocumentsLoading(true);
     try {
       const response = await contentApi.getDocuments(bookId);
+      if (sequence !== loadSequence.current) return;
       setDocuments(Array.isArray(response.data) ? response.data : []);
+      setDocumentsError(null);
     } catch {
-      setDocuments([]);
-      setDocumentsError("Could not load documents.");
+      if (sequence === loadSequence.current) {
+        setDocumentsError("Could not refresh documents. Retrying shortly.");
+      }
     } finally {
-      setDocumentsLoading(false);
+      if (sequence === loadSequence.current) setDocumentsLoading(false);
     }
   }, [bookId]);
 
   useEffect(() => {
+    currentBookId.current = bookId;
+    setDocuments([]);
+    setExtractingId(null);
     void loadBook();
     void loadDocuments();
-  }, [loadBook, loadDocuments]);
+    return () => {
+      currentBookId.current = "";
+      loadSequence.current++;
+    };
+  }, [bookId, loadBook, loadDocuments]);
+
+  const hasActiveExtraction = extractingId !== null || documents.some(doc => doc.status === "EXTRACTING");
+
+  useEffect(() => {
+    if (!hasActiveExtraction && !documentsError) return;
+    let cancelled = false;
+    let timer: ReturnType<typeof setTimeout>;
+    const poll = async () => {
+      await loadDocuments(true);
+      if (!cancelled) timer = setTimeout(poll, 5000);
+    };
+    timer = setTimeout(poll, 5000);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [hasActiveExtraction, documentsError, loadDocuments]);
+
+  useEffect(() => {
+    const refresh = () => { void loadDocuments(true); };
+    window.addEventListener("focus", refresh);
+    return () => window.removeEventListener("focus", refresh);
+  }, [loadDocuments]);
 
   const extract = useCallback(
     async (documentId: string): Promise<BookDocument | null> => {
+      if (startingExtraction.current) return null;
+      startingExtraction.current = true;
       setExtractingId(documentId);
       try {
         const response = await contentApi.extractDocument(documentId);
-        await loadDocuments();
+        if (currentBookId.current !== bookId) return null;
+        // Invalidate an older poll before publishing the accepted extraction state.
+        loadSequence.current++;
+        setDocuments(items => items.map(item => item.id === documentId ? response.data : item));
+        setDocumentsLoading(false);
         return response.data;
-      } catch {
-        await loadDocuments();
-        return null;
+      } catch (error) {
+        if (currentBookId.current === bookId) await loadDocuments(true);
+        throw error;
       } finally {
-        setExtractingId(null);
+        startingExtraction.current = false;
+        if (currentBookId.current === bookId) setExtractingId(null);
       }
     },
-    [loadDocuments]
+    [bookId, loadDocuments]
   );
 
   return {
@@ -85,7 +128,7 @@ export function useBookDocuments(bookId: string) {
     documentsError,
     documentsLoading,
     reloadBook: loadBook,
-    reloadDocuments: loadDocuments,
+    reloadDocuments: () => loadDocuments(),
     extract,
     extractingId
   };

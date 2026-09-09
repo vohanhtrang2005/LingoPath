@@ -1,3 +1,4 @@
+C:\hanhtrang\GAKUDO\content-service\src\main\java\com\gakudo\content\config\DocumentExtractionConfig.java
 C:\hanhtrang\GAKUDO\content-service\src\main\java\com\gakudo\content\ContentServiceApplication.java
 C:\hanhtrang\GAKUDO\content-service\src\main\java\com\gakudo\content\controller\BookController.java
 C:\hanhtrang\GAKUDO\content-service\src\main\java\com\gakudo\content\controller\BookDocumentController.java
@@ -58,6 +59,8 @@ C:\hanhtrang\GAKUDO\content-service\src\main\java\com\gakudo\content\service\Chu
 C:\hanhtrang\GAKUDO\content-service\src\main\java\com\gakudo\content\service\ChunkGenerationFinalizationService.java
 C:\hanhtrang\GAKUDO\content-service\src\main\java\com\gakudo\content\service\ChunkGenerationJobService.java
 C:\hanhtrang\GAKUDO\content-service\src\main\java\com\gakudo\content\service\ChunkGenerationWorker.java
+C:\hanhtrang\GAKUDO\content-service\src\main\java\com\gakudo\content\service\DocumentExtractionStateService.java
+C:\hanhtrang\GAKUDO\content-service\src\main\java\com\gakudo\content\service\DocumentExtractionWorker.java
 C:\hanhtrang\GAKUDO\content-service\src\main\java\com\gakudo\content\service\DocumentTypeDetector.java
 C:\hanhtrang\GAKUDO\content-service\src\main\java\com\gakudo\content\service\HttpAiChunkClient.java
 C:\hanhtrang\GAKUDO\content-service\src\main\java\com\gakudo\content\service\KnowledgeItemService.java

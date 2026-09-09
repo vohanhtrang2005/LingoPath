@@ -3,6 +3,11 @@ package com.gakudo.content.controller;
 import com.gakudo.content.dto.response.BookDocumentResponse;
 import com.gakudo.content.dto.response.ExtractedPageTextResponse;
 import com.gakudo.content.service.BookDocumentService;
+import com.gakudo.content.service.DocumentExtractionWorker;
+import com.gakudo.content.service.DocumentExtractionStateService;
+import org.springframework.core.task.TaskRejectedException;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -19,9 +24,15 @@ import java.util.UUID;
 @RequestMapping("/api/content")
 public class BookDocumentController {
     private final BookDocumentService bookDocumentService;
+    private final DocumentExtractionWorker extractionWorker;
+    private final DocumentExtractionStateService extractionState;
 
-    public BookDocumentController(BookDocumentService bookDocumentService) {
+    public BookDocumentController(BookDocumentService bookDocumentService,
+                                  DocumentExtractionWorker extractionWorker,
+                                  DocumentExtractionStateService extractionState) {
         this.bookDocumentService = bookDocumentService;
+        this.extractionWorker = extractionWorker;
+        this.extractionState = extractionState;
     }
 
     // Muc dich: Upload file vao mot Book, luu file goc va metadata rieng cho tung file.
@@ -38,10 +49,17 @@ public class BookDocumentController {
         return ResponseEntity.ok(bookDocumentService.getDocuments(bookId));
     }
 
-    // Muc dich: Bat dau extract text sync cho phase dau; sau nay co the tach queue async.
+    // Commit EXTRACTING before the worker starts; clients poll the document list.
     @PostMapping("/documents/{documentId}/extract")
     public ResponseEntity<BookDocumentResponse> extractDocument(@PathVariable UUID documentId) {
-        return ResponseEntity.ok(bookDocumentService.extractDocument(documentId));
+        BookDocumentResponse document = bookDocumentService.extractDocument(documentId);
+        try {
+            extractionWorker.extractAsync(documentId);
+        } catch (TaskRejectedException e) {
+            extractionState.fail(documentId, "Extraction queue is full. Please try again shortly.");
+            throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "Extraction queue is full", e);
+        }
+        return ResponseEntity.accepted().body(document);
     }
 
     // Muc dich: Lay text da extract theo page/de don vi tai lieu.

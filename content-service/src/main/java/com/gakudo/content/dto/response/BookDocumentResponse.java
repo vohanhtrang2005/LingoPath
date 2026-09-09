@@ -18,6 +18,8 @@ public class BookDocumentResponse {
     private DocumentType documentType;
     private DocumentStatus status;
     private String errorMessage;
+    private Integer totalPages;
+    private Integer processedPages;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
@@ -43,6 +45,10 @@ public class BookDocumentResponse {
     public void setStatus(DocumentStatus status) { this.status = status; }
     public String getErrorMessage() { return errorMessage; }
     public void setErrorMessage(String errorMessage) { this.errorMessage = errorMessage; }
+    public Integer getTotalPages() { return totalPages; }
+    public void setTotalPages(Integer totalPages) { this.totalPages = totalPages; }
+    public Integer getProcessedPages() { return processedPages; }
+    public void setProcessedPages(Integer processedPages) { this.processedPages = processedPages; }
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
     public LocalDateTime getUpdatedAt() { return updatedAt; }
