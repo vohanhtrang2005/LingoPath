@@ -168,6 +168,9 @@ export function AdminBookDocumentsPage() {
               onRetry={reloadDocuments}
               onExtract={handleExtract}
               onViewText={(document) => void loadPages(document)}
+              onViewChunks={(document) =>
+                navigate(`/admin/books/${bookId}/documents/${document.id}/chunks`)
+              }
               onDetails={setDetails}
             />
 

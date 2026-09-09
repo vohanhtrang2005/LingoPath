@@ -89,3 +89,41 @@ export type ExtractedPageText = {
   confidence?: number;
   createdAt?: string;
 };
+
+export type SourceChunkStatus = "AI_SUGGESTED" | "APPROVED" | "REJECTED";
+
+export type SourceChunk = {
+  id: string;
+  documentId: string;
+  chunkIndex: number;
+  sectionTitle?: string;
+  sectionType?: string;
+  pageFrom?: number;
+  pageTo?: number;
+  startMarker?: string;
+  endMarker?: string;
+  chunkText?: string;
+  status: SourceChunkStatus | string;
+  reviewReason?: string;
+  createdAt?: string;
+  updatedAt?: string;
+};
+
+export type ChunkGenerationJobStatus = "PENDING" | "RUNNING" | "SUCCEEDED" | "FAILED";
+
+export type ChunkGenerationJob = {
+  jobId: string;
+  documentId: string;
+  status: ChunkGenerationJobStatus;
+  totalBatches: number;
+  completedBatches: number;
+  errorMessage?: string;
+  createdAt?: string;
+  startedAt?: string;
+  completedAt?: string;
+  updatedAt?: string;
+};
+
+export type ChunkGenerationRequest = {
+  feedback?: string;
+};

@@ -10,6 +10,7 @@ import { LessonDetailPage } from "../features/lesson/LessonDetailPage";
 import { KnowledgeItemListPage } from "../features/content/KnowledgeItemListPage";
 import { AdminBooksPage } from "../features/admin/pages/AdminBooksPage";
 import { AdminBookDocumentsPage } from "../features/admin/pages/AdminBookDocumentsPage";
+import { AdminDocumentChunksPage } from "../features/admin/pages/AdminDocumentChunksPage";
 
 export const router = createBrowserRouter([
   {
@@ -25,7 +26,11 @@ export const router = createBrowserRouter([
       { path: "lessons/:lessonId", element: <LessonDetailPage /> },
       { path: "knowledge", element: <KnowledgeItemListPage /> },
       { path: "admin/books", element: <AdminBooksPage /> },
-      { path: "admin/books/:bookId/documents", element: <AdminBookDocumentsPage /> }
+      { path: "admin/books/:bookId/documents", element: <AdminBookDocumentsPage /> },
+      {
+        path: "admin/books/:bookId/documents/:documentId/chunks",
+        element: <AdminDocumentChunksPage />
+      }
     ]
   }
 ]);

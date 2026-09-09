@@ -1,1 +1,10 @@
 C:\hanhtrang\GAKUDO\ai-service\src\main\java\com\gakudo\ai\AiServiceApplication.java
+C:\hanhtrang\GAKUDO\ai-service\src\main\java\com\gakudo\ai\controller\AiChunkController.java
+C:\hanhtrang\GAKUDO\ai-service\src\main\java\com\gakudo\ai\dto\AiChunkBatchRequest.java
+C:\hanhtrang\GAKUDO\ai-service\src\main\java\com\gakudo\ai\dto\AiChunkBatchResponse.java
+C:\hanhtrang\GAKUDO\ai-service\src\main\java\com\gakudo\ai\dto\AiChunkPageRequest.java
+C:\hanhtrang\GAKUDO\ai-service\src\main\java\com\gakudo\ai\dto\AiChunkPlanItem.java
+C:\hanhtrang\GAKUDO\ai-service\src\main\java\com\gakudo\ai\service\AiChunkPromptBuilder.java
+C:\hanhtrang\GAKUDO\ai-service\src\main\java\com\gakudo\ai\service\AiChunkService.java
+C:\hanhtrang\GAKUDO\ai-service\src\main\java\com\gakudo\ai\service\AiProviderClient.java
+C:\hanhtrang\GAKUDO\ai-service\src\main\java\com\gakudo\ai\service\GeminiProviderClient.java

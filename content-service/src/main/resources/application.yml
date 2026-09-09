@@ -1,5 +1,7 @@
 server:
   port: 8083
+  error:
+    include-message: always
 
 spring:
   application:
@@ -29,3 +31,5 @@ gakudo:
       language: ${GAKUDO_CONTENT_OCR_LANGUAGE:eng+jpn}
       datapath: ${GAKUDO_CONTENT_OCR_DATAPATH:}
       pdf-dpi: ${GAKUDO_CONTENT_OCR_PDF_DPI:250}
+  ai:
+    base-url: ${GAKUDO_AI_BASE_URL:http://ai-service:8084}

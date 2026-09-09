@@ -16,6 +16,7 @@ import { ReadingSessionProvider } from './contexts/ReadingSessionContext';
 import { GrammarProgressProvider } from './contexts/GrammarProgressContext';
 import { AdminBooksPage } from './features/admin/pages/AdminBooksPage';
 import { AdminBookDocumentsPage } from './features/admin/pages/AdminBookDocumentsPage';
+import { AdminDocumentChunksPage } from './features/admin/pages/AdminDocumentChunksPage';
 
 /** Sends the prototype straight to a chosen screen on first load, once. */
 function BootRedirect({ to, onDone }: {to: string;onDone: () => void;}) {
@@ -76,6 +77,10 @@ export function App({
         <Route path="/learn/today/reading/result" element={<ReadingResult />} />
         <Route path="/admin/books" element={<AdminBooksPage />} />
         <Route path="/admin/books/:bookId/documents" element={<AdminBookDocumentsPage />} />
+        <Route
+          path="/admin/books/:bookId/documents/:documentId/chunks"
+          element={<AdminDocumentChunksPage />}
+        />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
       </ReadingSessionProvider>

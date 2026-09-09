@@ -1,0 +1,17 @@
+server:
+  port: 8084
+  error:
+    include-message: always
+
+spring:
+  application:
+    name: ai-service
+
+gakudo:
+  ai:
+    provider: ${GAKUDO_AI_PROVIDER:gemini}
+    gemini:
+      api-key: ${GEMINI_API_KEY:}
+      model: ${GEMINI_MODEL:gemini-3.5-flash-lite}
+      fallback-model: ${GEMINI_FALLBACK_MODEL:gemini-3.6-flash}
+      base-url: ${GEMINI_BASE_URL:https://generativelanguage.googleapis.com}

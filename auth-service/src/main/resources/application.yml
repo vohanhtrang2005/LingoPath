@@ -1,0 +1,22 @@
+server:
+  port: 8081
+
+spring:
+  application:
+    name: auth-service
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+
+gakudo:
+  jwt:
+    access-token-validity-in-seconds: 900
+    refresh-token-validity-in-seconds: 604800
+    key-id: gakudo-auth-key
+    # Optional for stable production tokens. Values may contain escaped newlines (\\n).
+    private-key: ${JWT_PRIVATE_KEY:}
+    public-key: ${JWT_PUBLIC_KEY:}
+  admin:
+    email: ${GAKUDO_ADMIN_EMAIL:}
+    password: ${GAKUDO_ADMIN_PASSWORD:}

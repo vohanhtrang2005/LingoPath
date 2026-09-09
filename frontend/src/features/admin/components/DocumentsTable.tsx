@@ -4,6 +4,7 @@ import {
   FileStackIcon,
   FileTextIcon,
   InfoIcon,
+  LayersIcon,
   LoaderCircleIcon,
   RefreshCwIcon,
   ScanTextIcon
@@ -20,6 +21,7 @@ interface DocumentsTableProps {
   onRetry: () => void;
   onExtract: (documentId: string) => void;
   onViewText: (document: BookDocument) => void;
+  onViewChunks: (document: BookDocument) => void;
   onDetails: (document: BookDocument) => void;
 }
 
@@ -48,6 +50,7 @@ export function DocumentsTable({
   onRetry,
   onExtract,
   onViewText,
+  onViewChunks,
   onDetails
 }: DocumentsTableProps) {
   return (
@@ -215,6 +218,14 @@ export function DocumentsTable({
                             >
                               <RefreshCwIcon className="h-3.5 w-3.5" aria-hidden="true" />
                               Re-extract
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => onViewChunks(document)}
+                              className="inline-flex items-center gap-1.5 rounded-full bg-sky-100 px-3.5 py-2 font-display text-xs font-bold text-[#3b6a94] transition-colors duration-150 ease-out hover:bg-sky-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-300"
+                            >
+                              <LayersIcon className="h-3.5 w-3.5" aria-hidden="true" />
+                              Chunks
                             </button>
                           </>
                         ) : null}
